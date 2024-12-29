@@ -6,6 +6,28 @@ const ASSET_URL = {
 const CODING_DESC_CONTAINER_CLASS = "coding_desc_container__gdB9M";
 const AI_HELPER_BUTTON_ID = "ai-helper-button";
 const CHAT_CONTAINER_ID = "ai-helper-chat-container";
+let currentApiKey = null;
+//const API_KEY = "AIzaSyA2Lm42bdlP5o7ZDr3Fkhb4JGB2nav1cxc"; // Note: Should be stored securely
+
+// Listen for API key updates from popup
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.type === "API_KEY_UPDATED") {
+    currentApiKey = message.apiKey;
+    console.log("API key updated in content script");
+  } else if (message.type === "API_KEY_REMOVED") {
+    currentApiKey = null;
+    console.log("API key removed from content script");
+  }
+});
+// Add this function near your other functions
+function checkApiKey() {
+  return new Promise((resolve) => {
+    chrome.storage.local.get(["geminiApiKey"], function (result) {
+      currentApiKey = result.geminiApiKey;
+      resolve(currentApiKey);
+    });
+  });
+}
 
 let lastVisitedPage = "";
 
@@ -13,7 +35,6 @@ let lastVisitedPage = "";
 const observer = new MutationObserver(() => {
   handleContentChange();
 });
-
 // Start observing the body for DOM changes
 observer.observe(document.body, {
   childList: true,
@@ -214,52 +235,165 @@ function injectChatInterface() {
   chatInput.focus();
 }
 
+// Add message display functions
+function createMessageElement(text, isUser = false) {
+  const messageDiv = document.createElement("div");
+  messageDiv.style.cssText = `
+    padding: 10px;
+    border-radius: 10px;
+    max-width: 70%;
+    margin: ${isUser ? "5px 5px 5px auto" : "5px auto 5px 5px"};
+    background-color: ${isUser ? "#007BFF" : "#e9ecef"};
+    color: ${isUser ? "white" : "black"};
+  `;
+  messageDiv.textContent = text;
+  return messageDiv;
+}
+
+// Handle sending messages and getting responses
+// Remove the const API_KEY declaration from the top
+// Instead, add this modified handleSendMessage function:
+
 async function handleSendMessage() {
   const chatInput = document.getElementById("chat-input");
   const chatMessages = document.getElementById("chat-messages");
-  const userMessage = chatInput.value.trim();
+  const message = chatInput.value.trim();
 
-  if (!userMessage) return;
+  if (!message) return;
 
-  // Add user message
-  const userMessageElement = document.createElement("div");
-  userMessageElement.style.cssText = `
-    align-self: flex-end;
-    background-color: #007BFF;
-    color: white;
-    padding: 10px 15px;
-    border-radius: 15px 15px 0 15px;
-    max-width: 80%;
-    word-wrap: break-word;
-  `;
-  userMessageElement.innerText = userMessage;
-  chatMessages.appendChild(userMessageElement);
+  // Check for API key
+  const apiKey = await checkApiKey();
 
-  // Clear input
+  if (!apiKey) {
+    chatMessages.appendChild(
+      createMessageElement(
+        "Please set your Gemini API key in the extension popup first. Click the extension icon in your browser toolbar to set it up.",
+        false
+      )
+    );
+    return;
+  }
+
+  // Display user message
+  chatMessages.appendChild(createMessageElement(message, true));
   chatInput.value = "";
 
   try {
-    // Get bot reply (placeholder)
-    const botReply =
-      "This is a placeholder response. Implement your API call here.";
+    // Show loading indicator
+    const loadingDiv = document.createElement("div");
+    loadingDiv.textContent = "AI is thinking...";
+    loadingDiv.style.cssText = `
+          padding: 10px;
+          font-style: italic;
+          color: #666;
+          align-self: flex-start;
+      `;
+    chatMessages.appendChild(loadingDiv);
 
-    // Add bot message
-    const botMessageElement = document.createElement("div");
-    botMessageElement.style.cssText = `
-      align-self: flex-start;
-      background-color: #f0f0f0;
-      color: black;
-      padding: 10px 15px;
-      border-radius: 15px 15px 15px 0;
-      max-width: 80%;
-      word-wrap: break-word;
-    `;
-    botMessageElement.innerText = botReply;
-    chatMessages.appendChild(botMessageElement);
+    // Call Gemini API
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${currentApiKey}`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [
+                {
+                  text: message,
+                },
+              ],
+            },
+          ],
+        }),
+      }
+    );
+
+    const data = await response.json();
+
+    // Remove loading indicator
+    chatMessages.removeChild(loadingDiv);
+
+    // Handle API response
+    if (data.candidates && data.candidates[0]?.content?.parts?.[0]?.text) {
+      const aiResponse = data.candidates[0].content.parts[0].text;
+      chatMessages.appendChild(createMessageElement(aiResponse, false));
+    } else {
+      if (data.error) {
+        // Handle specific API errors
+        chatMessages.appendChild(
+          createMessageElement(
+            `Error: ${data.error.message || "Invalid API response"}`,
+            false
+          )
+        );
+      } else {
+        throw new Error("Invalid API response");
+      }
+    }
   } catch (error) {
     console.error("Error:", error);
+    chatMessages.appendChild(
+      createMessageElement(
+        "Sorry, I encountered an error. Please try again. " +
+          (error.message === "Failed to fetch"
+            ? "Please check your internet connection and API key."
+            : error.message),
+        false
+      )
+    );
   }
 
   // Scroll to bottom
   chatMessages.scrollTop = chatMessages.scrollHeight;
 }
+
+window.addEventListener("xhrDataFetched", function (event) {
+  const data = event.detail;
+  console.log("Received data in content.js", data);
+});
+
+// function to handle script
+function addInjectScript() {
+  const script = document.createElement("script");
+  script.src = chrome.runtime.getURL("inject.js");
+  document.documentElement.insertAdjacentElement("afterbegin", script);
+  script.remove();
+}
+
+// function to handle the apikey from the popup ""
+document.addEventListener("DOMContentLoaded", function () {
+  // Load saved API key
+  chrome.storage.local.get(["geminiApiKey"], function (result) {
+    if (result.geminiApiKey) {
+      document.getElementById("apiKey").value = result.geminiApiKey;
+    }
+  });
+
+  // Save API key
+  document.getElementById("saveButton").addEventListener("click", function () {
+    const apiKey = document.getElementById("apiKey").value.trim();
+    const status = document.getElementById("status");
+
+    if (!apiKey) {
+      status.textContent = "Please enter an API key";
+      status.className = "status error";
+      status.style.display = "block";
+      return;
+    }
+
+    chrome.storage.local.set({ geminiApiKey: apiKey }, function () {
+      status.textContent = "Settings saved successfully!";
+      status.className = "status success";
+      status.style.display = "block";
+
+      // Hide the success message after 2 seconds
+      setTimeout(() => {
+        status.style.display = "none";
+      }, 2000);
+    });
+  });
+});

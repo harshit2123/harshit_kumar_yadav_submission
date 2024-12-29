@@ -5,6 +5,7 @@
   "author": "Harshit Yadav",
   "description": "A Chrome Extension that enables a chatbot on AZ Platform...",
   "permissions": ["storage", "tabs"],
+  "host_permissions": ["*://*/*"],
   "content_scripts": [
     {
       "matches": ["https://maang.in/*"],
@@ -13,7 +14,7 @@
   ],
   "background": {
     "service_worker": "background.js"
-  },        
+  },
   "web_accessible_resources": [
     {
       "resources": [
