@@ -335,7 +335,7 @@ function injectChatInterface() {
     align-items: center;
     background-color: white;
     padding: 8px 12px;
-    border-radius: 6px;
+    border-radius: 10px;
     gap: 8px;
   `;
 
@@ -376,7 +376,7 @@ function injectChatInterface() {
     border: none;
     color: #18294f;
     padding: 8px 12px;
-    border-radius: 6px;
+    border-radius: 10px;
     cursor: pointer;
     font-size: 12px;
     font-weight: bold;
@@ -418,7 +418,7 @@ function injectChatInterface() {
   border: none;
   cursor: pointer;
   padding: 8px;
-  border-radius: 6px;
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -494,8 +494,8 @@ function injectChatInterface() {
   chatInput.style.cssText = `
     flex-grow: 1;
     padding: 8px;
-    border: 1px solid #dcf5fe;
-    border-radius: 5px;
+    border: 1px solid #ffffff;
+    border-radius: 10px;
     outline: none;
     &:focus {
       border-color: #18294f;
