@@ -108,8 +108,8 @@ function createMessageElement(text, isUser = false) {
     border-radius: 10px;
     max-width: 70%;
     margin: ${isUser ? "5px 5px 5px auto" : "5px auto 5px 5px"};
-    background-color: ${isUser ? "#007BFF" : "#e9ecef"};
-    color: ${isUser ? "white" : "black"};
+    background-color: ${isUser ? "#daf4fd" : "#e9ecef"};
+    color: ${isUser ? "black" : "black"};
   `;
   messageDiv.textContent = text;
   return messageDiv;
@@ -370,7 +370,7 @@ function injectChatInterface() {
 
   // Clear history button
   const clearButton = document.createElement("button");
-  clearButton.innerText = "Clear History";
+  clearButton.innerText = "Clear Chat";
   clearButton.style.cssText = `
     background-color: white;
     border: none;
@@ -381,10 +381,18 @@ function injectChatInterface() {
     font-size: 12px;
     font-weight: bold;
     transition: all 0.2s;
+    opacity: 1;
+    height: fit-content;
+    /* Note: CSS classes are not directly applicable through style.cssText, 
+       they are typically added via className or classList */
     &:hover {
       background-color: #f8f9fa;
     }
   `;
+
+  // Classes can be added like this:
+  clearButton.className =
+    "ant-btn css-19gw05y ant-btn-default Button_gradient_light_button__ZDAR_ px-3 px-sm-4 py-2 flex";
 
   clearButton.addEventListener("click", async () => {
     const problemId = getCurrentProblemId();
@@ -406,28 +414,33 @@ function injectChatInterface() {
   // Close button with icon
   const closeButton = document.createElement("button");
   closeButton.style.cssText = `
-    background-color: white;
-    border: none;
-    cursor: pointer;
-    padding: 8px;
-    border-radius: 6px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s;
-    &:hover {
-      background-color: #f8f9fa;
-    }
-  `;
+  background-color: white;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  height: fit-content; /* Added */
+  &:hover {
+    background-color: #f8f9fa;
+  }
+`;
+
+  // Classes can be added like this:
+  closeButton.className =
+    "ant-btn css-19gw05y ant-btn-default Button_gradient_light_button__ZDAR_ px-3 px-sm-4 py-2 flex";
 
   // Using Font Awesome close icon instead of image
   const closeIcon = document.createElement("i");
   closeIcon.className = "fas fa-times";
   closeIcon.style.cssText = `
-    color: #18294f;
-    font-size: 20px;
-    font-weight: bold;
-  `;
+  color: #18294f;
+  font-size: 20px;
+  font-weight: bold;
+`;
 
   // ... (rest of the code remains the same)
 
@@ -456,7 +469,7 @@ function injectChatInterface() {
     overflow-y: auto;
     padding: 15px;
     display: flex;
-     border-radius: 6px;
+   
     flex-direction: column;
     gap: 10px;
     background-color: #f8f9fa;
@@ -470,6 +483,8 @@ function injectChatInterface() {
     gap: 10px;
     border-top: 1px solid #dcf5fe;
     background-color: white;
+    border-bottom-left-radius: 10px;  /* Add bottom-left radius */
+    border-bottom-right-radius: 10px; /* Add bottom-right radius */
   `;
 
   // Input field
