@@ -101,18 +101,149 @@ async function checkApiKey() {
 }
 
 // Chat interface
+// First, add Prism.js for syntax highlighting - add this in your injectChatInterface function
+function addSyntaxHighlightingResources() {
+  // Add Prism CSS
+  if (!document.querySelector('link[href*="prism"]')) {
+    const prismCss = document.createElement("link");
+    prismCss.rel = "stylesheet";
+    prismCss.href =
+      "https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css";
+    document.head.appendChild(prismCss);
+  }
+
+  // Add Prism JS
+  if (!document.querySelector('script[src*="prism"]')) {
+    const prismJs = document.createElement("script");
+    prismJs.src =
+      "https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js";
+    document.head.appendChild(prismJs);
+
+    // Add common language support
+    const languages = [
+      "javascript",
+      "python",
+      "java",
+      "cpp",
+      "c",
+      "ruby",
+      "go",
+      "php",
+    ];
+    languages.forEach((lang) => {
+      const script = document.createElement("script");
+      script.src = `https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-${lang}.min.js`;
+      document.head.appendChild(script);
+    });
+  }
+}
+
+// Enhanced message element creation with code block support
 function createMessageElement(text, isUser = false) {
   const messageDiv = document.createElement("div");
   messageDiv.style.cssText = `
     padding: 10px;
     border-radius: 10px;
-    max-width: 70%;
+    max-width: 85%;
     margin: ${isUser ? "5px 5px 5px auto" : "5px auto 5px 5px"};
     background-color: ${isUser ? "#daf4fd" : "#e9ecef"};
-    color: ${isUser ? "black" : "black"};
+    color: black;
+    word-wrap: break-word;
   `;
-  messageDiv.textContent = text;
+
+  if (isUser) {
+    messageDiv.textContent = text;
+    return messageDiv;
+  }
+
+  // Process markdown code blocks
+  const codeBlockRegex = /```(\w+)?\n([\s\S]*?)```/g;
+  let lastIndex = 0;
+  let match;
+  const fragments = [];
+
+  while ((match = codeBlockRegex.exec(text)) !== null) {
+    // Add text before code block
+    if (match.index > lastIndex) {
+      const textFragment = document.createElement("div");
+      textFragment.textContent = text.slice(lastIndex, match.index);
+      textFragment.style.marginBottom = "10px";
+      fragments.push(textFragment);
+    }
+
+    // Create code block container with horizontal scroll
+    const codeContainer = document.createElement("div");
+    codeContainer.style.cssText = `
+      overflow-x: auto;
+      margin: 10px 0;
+      border-radius: 5px;
+      background-color: #ffffff !important;
+    `;
+
+    // Create code block
+    const language = match[1] || "plaintext";
+    const code = match[2].trim();
+    const preElement = document.createElement("pre");
+    preElement.style.cssText = `
+      margin: 0;
+      padding: 1em;
+      background-color: transparent !important;
+    `;
+
+    const codeElement = document.createElement("code");
+    codeElement.className = `language-${language}`;
+    codeElement.textContent = code;
+
+    preElement.appendChild(codeElement);
+    codeContainer.appendChild(preElement);
+    fragments.push(codeContainer);
+
+    lastIndex = match.index + match[0].length;
+  }
+
+  // Add remaining text after last code block
+  if (lastIndex < text.length) {
+    const textFragment = document.createElement("div");
+    textFragment.textContent = text.slice(lastIndex);
+    fragments.push(textFragment);
+  }
+
+  // Append all fragments to message div
+  fragments.forEach((fragment) => messageDiv.appendChild(fragment));
+
+  // Highlight code blocks
+  if (typeof Prism !== "undefined") {
+    messageDiv.querySelectorAll("code").forEach((block) => {
+      Prism.highlightElement(block);
+    });
+  }
+
   return messageDiv;
+}
+
+// Modified chat messages container style in injectChatInterface
+function injectChatInterface() {
+  // Add syntax highlighting resources
+  addSyntaxHighlightingResources();
+
+  // ... (previous code remains the same)
+
+  // Messages container with fixed height and scrolling
+  const chatMessages = document.createElement("div");
+  chatMessages.id = "chat-messages";
+  chatMessages.style.cssText = `
+    flex-grow: 1;
+    overflow-y: auto;
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    background-color: #f8f9fa;
+    height: 0; /* This ensures the container respects flex-grow */
+    min-height: 0; /* This is crucial for enabling scrolling */
+  `;
+
+  // ... (rest of your existing injectChatInterface code)
 }
 
 async function loadChatHistory(chatMessages) {
