@@ -530,8 +530,8 @@ function addAIHelperButton() {
   buttonContent.appendChild(buttonText);
   aiHelperButton.appendChild(buttonContent);
 
-  // Style the button to match existing styles while keeping square shape
-  aiHelperButton.style.cssText = `
+  // Store the default button styles in a constant
+  const DEFAULT_BUTTON_STYLES = `
     background: linear-gradient(to right, #dfeaff, white);
     border: none;
     border-radius: 5px;
@@ -546,6 +546,16 @@ function addAIHelperButton() {
     justify-content: center;
   `;
 
+  // Function to reset button to default state
+  const resetButtonState = () => {
+    aiHelperButton.style.cssText = DEFAULT_BUTTON_STYLES;
+    buttonText.style.opacity = "0";
+    buttonText.style.width = "0";
+  };
+
+  // Initial button styling
+  resetButtonState();
+
   // Add hover effects
   aiHelperButton.addEventListener("mouseenter", () => {
     aiHelperButton.style.width = "130px";
@@ -556,11 +566,7 @@ function addAIHelperButton() {
   });
 
   aiHelperButton.addEventListener("mouseleave", () => {
-    aiHelperButton.style.width = "40px";
-    aiHelperButton.style.padding = "0";
-    buttonText.style.opacity = "0";
-    buttonText.style.width = "0";
-    aiHelperButton.style.boxShadow = "0 2px 8px rgba(53, 104, 175, 0.2)";
+    resetButtonState();
   });
 
   // Add click handler
@@ -572,6 +578,18 @@ function addAIHelperButton() {
     }
   });
 
+  // Function to show the button
+  const showButton = () => {
+    aiHelperButton.style.display = "flex";
+    resetButtonState();
+  };
+
+  // Add event listener for chat close if you have a close button
+  // Assuming you have a chat close button with id 'chatCloseButton'
+  document.addEventListener("chatClosed", () => {
+    showButton();
+  });
+
   // Find the container and the flex row that contains the Ask Doubt button
   const codingDescContainer = document.getElementsByClassName(
     CODING_DESC_CONTAINER_CLASS
@@ -581,8 +599,15 @@ function addAIHelperButton() {
       ".d-flex.align-items-start.align-items-sm-center.justify-content-between.flex-column.flex-sm-row"
     );
     if (flexRow) {
-      // Add button to the same row as Ask Doubt button
-      flexRow.appendChild(aiHelperButton);
+      // Insert AI Helper button before the Ask Doubt button
+      const askDoubtButton = flexRow.querySelector(
+        ".coding_ask_doubt_button__FjwXJ"
+      );
+      if (askDoubtButton) {
+        flexRow.insertBefore(aiHelperButton, askDoubtButton);
+      } else {
+        flexRow.appendChild(aiHelperButton);
+      }
     }
   }
 
@@ -594,6 +619,9 @@ function addAIHelperButton() {
       "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css";
     document.head.appendChild(fontAwesome);
   }
+
+  // Return the showButton function so it can be called from the chat interface
+  return showButton;
 }
 
 function handleContentChange() {
