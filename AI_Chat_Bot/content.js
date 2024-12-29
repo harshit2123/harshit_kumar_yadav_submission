@@ -366,16 +366,20 @@ function injectChatInterface() {
   `;
 
   // Clear history button
+  // ... (previous code remains the same until clear button)
+
+  // Clear history button
   const clearButton = document.createElement("button");
   clearButton.innerText = "Clear History";
   clearButton.style.cssText = `
     background-color: white;
-    border: 1px solid #18294f;
+    border: none;
     color: #18294f;
-    padding: 5px 10px;
-    border-radius: 4px;
+    padding: 8px 12px;
+    border-radius: 6px;
     cursor: pointer;
     font-size: 12px;
+    font-weight: bold;
     transition: all 0.2s;
     &:hover {
       background-color: #f8f9fa;
@@ -402,13 +406,18 @@ function injectChatInterface() {
   // Close button with icon
   const closeButton = document.createElement("button");
   closeButton.style.cssText = `
-    background: none;
+    background-color: white;
     border: none;
     cursor: pointer;
-    padding: 5px;
+    padding: 8px;
+    border-radius: 6px;
     display: flex;
     align-items: center;
     justify-content: center;
+    transition: all 0.2s;
+    &:hover {
+      background-color: #f8f9fa;
+    }
   `;
 
   // Using Font Awesome close icon instead of image
@@ -417,7 +426,10 @@ function injectChatInterface() {
   closeIcon.style.cssText = `
     color: #18294f;
     font-size: 20px;
+    font-weight: bold;
   `;
+
+  // ... (rest of the code remains the same)
 
   closeButton.appendChild(closeIcon);
   closeButton.addEventListener("click", () => {
@@ -444,6 +456,7 @@ function injectChatInterface() {
     overflow-y: auto;
     padding: 15px;
     display: flex;
+     border-radius: 6px;
     flex-direction: column;
     gap: 10px;
     background-color: #f8f9fa;
