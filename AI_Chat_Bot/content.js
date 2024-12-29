@@ -313,23 +313,49 @@ function injectChatInterface() {
     flex-direction: column;
     margin-top: 15px;
     margin-bottom: 15px;
+    border: 2px solid #dcf5fe;
   `;
 
   // Chat header with toolbar
   const chatHeader = document.createElement("div");
   chatHeader.style.cssText = `
     padding: 15px;
-    background-color: #007BFF;
-    color: white;
-    border-radius: 10px 10px 0 0;
+    background-color: #dcf5fe;
+    color: #18294f;
+    border-radius: 8px 8px 0 0;
     display: flex;
     justify-content: space-between;
     align-items: center;
   `;
 
-  // Title and toolbar container
+  // Title and toolbar container with white background box
   const headerLeft = document.createElement("div");
-  headerLeft.innerText = "AI Helper";
+  headerLeft.style.cssText = `
+    display: flex;
+    align-items: center;
+    background-color: white;
+    padding: 8px 12px;
+    border-radius: 6px;
+    gap: 8px;
+  `;
+
+  // Add robot icon
+  const robotIcon = document.createElement("i");
+  robotIcon.className = "fas fa-robot";
+  robotIcon.style.color = "#18294f";
+
+  // Add title text
+  const titleText = document.createElement("span");
+  titleText.innerText = "AI HELPER";
+  titleText.style.cssText = `
+    color: #18294f;
+    font-weight: bold;
+    font-size: 14px;
+  `;
+
+  // Assemble header left
+  headerLeft.appendChild(robotIcon);
+  headerLeft.appendChild(titleText);
 
   // Toolbar container
   const headerRight = document.createElement("div");
@@ -343,23 +369,22 @@ function injectChatInterface() {
   const clearButton = document.createElement("button");
   clearButton.innerText = "Clear History";
   clearButton.style.cssText = `
-    background-color: transparent;
-    border: 1px solid white;
-    color: white;
+    background-color: white;
+    border: 1px solid #18294f;
+    color: #18294f;
     padding: 5px 10px;
     border-radius: 4px;
     cursor: pointer;
     font-size: 12px;
-    transition: background-color 0.2s;
+    transition: all 0.2s;
     &:hover {
-      background-color: rgba(255, 255, 255, 0.1);
+      background-color: #f8f9fa;
     }
   `;
 
   clearButton.addEventListener("click", async () => {
     const problemId = getCurrentProblemId();
     if (!problemId) return;
-
     if (
       confirm(
         "Are you sure you want to clear the chat history for this problem?"
@@ -374,16 +399,27 @@ function injectChatInterface() {
     }
   });
 
-  // Close button
-  const closeButton = document.createElement("img");
-  closeButton.src = ASSET_URL.close;
+  // Close button with icon
+  const closeButton = document.createElement("button");
   closeButton.style.cssText = `
-    width: 20px;
-    height: 20px;
+    background: none;
+    border: none;
     cursor: pointer;
-    margin-left: 10px;
+    padding: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   `;
 
+  // Using Font Awesome close icon instead of image
+  const closeIcon = document.createElement("i");
+  closeIcon.className = "fas fa-times";
+  closeIcon.style.cssText = `
+    color: #18294f;
+    font-size: 20px;
+  `;
+
+  closeButton.appendChild(closeIcon);
   closeButton.addEventListener("click", () => {
     chatContainer.remove();
     const aiHelperButton = document.getElementById(AI_HELPER_BUTTON_ID);
@@ -413,13 +449,13 @@ function injectChatInterface() {
     background-color: #f8f9fa;
   `;
 
-  // Input container - This was missing in the original code
+  // Input container
   const inputContainer = document.createElement("div");
   inputContainer.style.cssText = `
     display: flex;
     padding: 15px;
     gap: 10px;
-    border-top: 1px solid #eee;
+    border-top: 1px solid #dcf5fe;
     background-color: white;
   `;
 
@@ -430,20 +466,34 @@ function injectChatInterface() {
   chatInput.style.cssText = `
     flex-grow: 1;
     padding: 8px;
-    border: 1px solid #ddd;
+    border: 1px solid #dcf5fe;
     border-radius: 5px;
     outline: none;
+    &:focus {
+      border-color: #18294f;
+    }
   `;
 
   // Send button
-  const sendButton = document.createElement("img");
-  sendButton.src = ASSET_URL.send;
+  const sendButton = document.createElement("button");
   sendButton.style.cssText = `
-    width: 30px;
-    height: 30px;
+    background: none;
+    border: none;
     cursor: pointer;
+    padding: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   `;
 
+  const sendIcon = document.createElement("i");
+  sendIcon.className = "fas fa-paper-plane";
+  sendIcon.style.cssText = `
+    color: #18294f;
+    font-size: 20px;
+  `;
+
+  sendButton.appendChild(sendIcon);
   sendButton.addEventListener("click", handleSendMessage);
   chatInput.addEventListener("keypress", (e) => {
     if (e.key === "Enter") {
@@ -459,6 +509,15 @@ function injectChatInterface() {
   chatContainer.appendChild(chatHeader);
   chatContainer.appendChild(chatMessages);
   chatContainer.appendChild(inputContainer);
+
+  // Add FontAwesome if not already present
+  if (!document.querySelector('link[href*="fontawesome"]')) {
+    const fontAwesome = document.createElement("link");
+    fontAwesome.rel = "stylesheet";
+    fontAwesome.href =
+      "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css";
+    document.head.appendChild(fontAwesome);
+  }
 
   const codingDescContainer = document.getElementsByClassName(
     CODING_DESC_CONTAINER_CLASS
