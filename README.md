@@ -23,7 +23,10 @@
    - Automatically provides the problem context to the AI in the first message. Subsequent messages contain only user inputs for clarity.
      
 7. **Readable Message Code**  
-   - Automatically renders the message elements code , so that it becomes readable and also highlights the important part in the message element. 
+   - Automatically renders the message elements code , so that it becomes readable and also highlights the important part in the message element.
+   
+8.**Added the Generative Chat Feature 
+   - chat can remember the previous messages to it, so that it can remember the Previous Conversation  
 
 ---
 
