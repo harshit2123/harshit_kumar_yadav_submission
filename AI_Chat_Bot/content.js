@@ -103,7 +103,6 @@ async function checkApiKey() {
 // Chat interface
 // First, add Prism.js for syntax highlighting - add this in your injectChatInterface function
 function addSyntaxHighlightingResources() {
-  // Add Prism CSS
   if (!document.querySelector('link[href*="prism"]')) {
     const prismCss = document.createElement("link");
     prismCss.rel = "stylesheet";
@@ -259,9 +258,7 @@ async function loadChatHistory(chatMessages) {
   chatMessages.scrollTop = chatMessages.scrollHeight;
 }
 
-// ... (previous constants and basic functions remain the same)
-
-// Chat history management with message type tracking
+// Chat history management
 async function saveChatHistory(problemId, messages) {
   return new Promise((resolve) => {
     chrome.storage.local.set(
@@ -274,59 +271,60 @@ async function saveChatHistory(problemId, messages) {
   });
 }
 
-async function isFirstMessage(problemId) {
+async function getChatHistory(problemId) {
   return new Promise((resolve) => {
-    chrome.storage.local.get([`firstMessage_${problemId}`], (result) => {
-      resolve(result[`firstMessage_${problemId}`] === undefined);
+    chrome.storage.local.get([`chat_${problemId}`], (result) => {
+      resolve(result[`chat_${problemId}`] || []);
     });
   });
 }
 
-// Enhanced message formatting
-function createInitialPrompt(problemId, userMessage) {
-  const problemData = getProblemDataById(problemId);
-  if (!problemData) return userMessage;
+// Format message history for API
+function formatMessagesForAPI(messages) {
+  return messages.map((msg) => ({
+    role: msg.isUser ? "user" : "model",
+    parts: [{ text: msg.text }],
+  }));
+}
 
-  let prompt = `I am helping with a coding problem. Here's the context:\n\n`;
+// Create initial context message
+function createInitialContextMessage(problemData) {
+  if (!problemData) return null;
 
-  // Add problem information
-  if (problemData.title) {
-    prompt += `Problem: ${problemData.title}\n`;
-  }
-  if (problemData.difficulty) {
-    prompt += `Difficulty: ${problemData.difficulty}\n`;
-  }
-  if (problemData.description) {
-    prompt += `\nDescription:\n${problemData.description}\n`;
-  }
+  let contextMsg = {
+    role: "user",
+    parts: [
+      {
+        text: `I'm working on a coding problem. Here's the context:
+Problem: ${problemData.title || "N/A"}
+Difficulty: ${problemData.difficulty || "N/A"}
+Description: ${problemData.description || "N/A"}
 
-  // Add examples if available
-  if (problemData.examples && problemData.examples.length > 0) {
-    prompt += `\nExamples:\n`;
-    problemData.examples.forEach((example, index) => {
-      prompt += `Example ${index + 1}:\n`;
-      if (example.input) prompt += `Input: ${example.input}\n`;
-      if (example.output) prompt += `Output: ${example.output}\n`;
-      if (example.explanation)
-        prompt += `Explanation: ${example.explanation}\n`;
-      prompt += "\n";
-    });
-  }
+${
+  problemData.examples
+    ? "Examples:\n" +
+      problemData.examples
+        .map(
+          (ex, i) =>
+            `Example ${i + 1}:
+Input: ${ex.input || "N/A"}
+Output: ${ex.output || "N/A"}
+${ex.explanation ? "Explanation: " + ex.explanation : ""}`
+        )
+        .join("\n\n")
+    : ""
+}
 
-  // Add constraints if available
-  if (problemData.constraints) {
-    prompt += `\nConstraints:\n${problemData.constraints}\n`;
-  }
+${problemData.constraints ? "Constraints:\n" + problemData.constraints : ""}
 
-  // Add current code if available
-  if (problemData.code) {
-    prompt += `\nCurrent Code:\n${problemData.code}\n`;
-  }
+${problemData.code ? "Current Code:\n" + problemData.code : ""}
 
-  // Add user's question
-  prompt += `\nUser Question: ${userMessage}\n`;
+Please help me solve this problem. Respond with "I understand the problem context." and wait for my question.`,
+      },
+    ],
+  };
 
-  return prompt;
+  return contextMsg;
 }
 
 // Modified message handling
@@ -367,11 +365,20 @@ async function handleSendMessage() {
     `;
     chatMessages.appendChild(loadingDiv);
 
-    // Check if this is the first message
-    const isFirst = await isFirstMessage(problemId);
-    const messageToSend = isFirst
-      ? createInitialPrompt(problemId, message)
-      : message;
+    // Prepare messages for API
+    let apiMessages = [];
+
+    // If this is the first message, add context
+    if (history.length === 1) {
+      const problemData = getProblemDataById(problemId);
+      const contextMsg = createInitialContextMessage(problemData);
+      if (contextMsg) {
+        apiMessages.push(contextMsg);
+      }
+    }
+
+    // Add conversation history
+    apiMessages = [...apiMessages, ...formatMessagesForAPI(history)];
 
     // Call Gemini API
     const response = await fetch(
@@ -382,15 +389,13 @@ async function handleSendMessage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                {
-                  text: messageToSend,
-                },
-              ],
-            },
-          ],
+          contents: apiMessages,
+          generationConfig: {
+            temperature: 0.7,
+            topK: 40,
+            topP: 0.95,
+            maxOutputTokens: 2048,
+          },
         }),
       }
     );
@@ -419,10 +424,6 @@ async function handleSendMessage() {
   chatMessages.scrollTop = chatMessages.scrollHeight;
 }
 
-// ... (rest of the UI code remains the same)
-
-// ... (previous constants remain the same)
-
 // Chat history management
 async function clearChatHistory(problemId) {
   return new Promise((resolve) => {
@@ -430,7 +431,6 @@ async function clearChatHistory(problemId) {
   });
 }
 
-// ... (previous saveChatHistory and getChatHistory functions remain the same)
 function injectChatInterface() {
   const chatContainer = document.createElement("div");
   chatContainer.id = CHAT_CONTAINER_ID;
@@ -495,9 +495,6 @@ function injectChatInterface() {
     gap: 10px;
     align-items: center;
   `;
-
-  // Clear history button
-  // ... (previous code remains the same until clear button)
 
   // Clear history button
   const clearButton = document.createElement("button");
@@ -572,8 +569,6 @@ function injectChatInterface() {
   font-size: 20px;
   font-weight: bold;
 `;
-
-  // ... (rest of the code remains the same)
 
   closeButton.appendChild(closeIcon);
   closeButton.addEventListener("click", () => {
