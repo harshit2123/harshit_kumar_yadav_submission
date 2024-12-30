@@ -21,6 +21,9 @@
 
 6. **Automatic Context Provision**  
    - Automatically provides the problem context to the AI in the first message. Subsequent messages contain only user inputs for clarity.
+     
+7. **Readable Message Code**  
+   - Automatically renders the message elements code , so that it becomes readable and also highlights the important part in the message element. 
 
 ---
 
